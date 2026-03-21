@@ -1,5 +1,8 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 
+// ✅ ADD THIS LINE
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -22,7 +25,8 @@ export const AuthProvider = ({ children }) => {
   // Signup
   const signup = async (email, password, name) => {
     try {
-      const res = await fetch('/api/auth/signup', {
+      // ✅ UPDATED: Use API_URL
+      const res = await fetch(`${API_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, name }),
@@ -45,7 +49,8 @@ export const AuthProvider = ({ children }) => {
   // Login
   const login = async (email, password) => {
     try {
-      const res = await fetch('/api/auth/login', {
+      // ✅ UPDATED: Use API_URL
+      const res = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
