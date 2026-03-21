@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import './Dashboard.css';
+import luffyImg from '/luffy.png';
 
 export default function Dashboard({ onNavigate }) {
   const { logout } = useAuth();
