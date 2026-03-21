@@ -1,77 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 
-const ProgressPageReal = ({ onNavigate }) => {
+// ✅ ADD THIS LINE AT THE TOP
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+const Progress = ({ onNavigate }) => {
   const { token } = useAuth();
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [analytics, setAnalytics] = useState(null);
-  const [insights, setInsights] = useState(null);
-  const [selectedMetric, setSelectedMetric] = useState('overview');
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchAnalytics();
+    fetchProgressStats();
   }, []);
 
-  const fetchAnalytics = async () => {
+  const fetchProgressStats = async () => {
     try {
-      console.log('📊 Fetching analytics...');
-      
-      const res = await fetch('/api/progress/analytics', {
+      // ✅ UPDATED: Use API_URL
+      const res = await fetch(`${API_URL}/api/progress`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (!res.ok) {
-        throw new Error('Failed to fetch analytics');
-      }
-
       const data = await res.json();
-      setAnalytics(data.analytics);
-      setInsights(data.insights);
-      console.log('✅ Analytics loaded');
+      if (res.ok) {
+        setStats(data);
+      } else {
+        setError(data.error || 'Failed to fetch progress');
+      }
     } catch (err) {
-      console.error('Error fetching analytics:', err);
+      console.error('Error fetching progress:', err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div style={styles.container}>
-        <div style={styles.navbar}>
-          <div style={styles.navLeft}>
-            <span style={styles.owl}>🦉</span>
-            <h1 style={styles.brandName}>StudyCoach</h1>
-          </div>
-          <button onClick={() => onNavigate('dashboard')} style={styles.backBtn}>
-            ← Back
-          </button>
-        </div>
-        <div style={styles.content}>
-          <p style={styles.loadingText}>Loading your progress analytics...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!analytics) {
-    return (
-      <div style={styles.container}>
-        <div style={styles.navbar}>
-          <div style={styles.navLeft}>
-            <span style={styles.owl}>🦉</span>
-            <h1 style={styles.brandName}>StudyCoach</h1>
-          </div>
-          <button onClick={() => onNavigate('dashboard')} style={styles.backBtn}>
-            ← Back
-          </button>
-        </div>
-        <div style={styles.content}>
-          <p style={styles.loadingText}>No analytics data yet. Start studying to see your progress!</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div style={styles.container}>
@@ -87,205 +48,99 @@ const ProgressPageReal = ({ onNavigate }) => {
       </div>
 
       <div style={styles.content}>
-        <div style={styles.header}>
-          <h1 style={styles.pageTitle}>📊 Your Learning Progress</h1>
-          <p style={styles.pageSubtitle}>AI-powered analytics of your study journey</p>
-        </div>
+        <h1 style={styles.pageTitle}>📊 Your Progress</h1>
+        <p style={styles.pageSubtitle}>Track your learning journey</p>
 
-        {/* Key Metrics */}
-        <div style={styles.metricsGrid}>
-          <div style={styles.metricCard}>
-            <p style={styles.metricIcon}>📚</p>
-            <p style={styles.metricLabel}>Documents</p>
-            <p style={styles.metricValue}>{analytics.totalDocuments}</p>
-          </div>
-          <div style={styles.metricCard}>
-            <p style={styles.metricIcon}>❓</p>
-            <p style={styles.metricLabel}>Questions Asked</p>
-            <p style={styles.metricValue}>{analytics.totalQuestions}</p>
-          </div>
-          <div style={styles.metricCard}>
-            <p style={styles.metricIcon}>✅</p>
-            <p style={styles.metricLabel}>Quiz Questions</p>
-            <p style={styles.metricValue}>{analytics.totalQuizzes}</p>
-          </div>
-          <div style={styles.metricCard}>
-            <p style={styles.metricIcon}>⏱️</p>
-            <p style={styles.metricLabel}>Study Hours</p>
-            <p style={styles.metricValue}>{analytics.estimatedHours}</p>
-          </div>
-        </div>
-
-        {/* Overview Card */}
-        <div style={styles.card}>
-          <h2 style={styles.sectionTitle}>🎯 Your Learning Overview</h2>
-          <p style={styles.overviewText}>{insights?.overview}</p>
-        </div>
-
-        {/* Topic Mastery */}
-        <div style={styles.card}>
-          <h2 style={styles.sectionTitle}>📈 Topic Mastery</h2>
-          {analytics.topicMastery && analytics.topicMastery.length > 0 ? (
-            <div style={styles.topicsList}>
-              {analytics.topicMastery.map((topic, idx) => (
-                <div key={idx} style={styles.topicItem}>
-                  <div style={styles.topicHeader}>
-                    <p style={styles.topicName}>{topic.topic}</p>
-                    <p style={styles.topicPercent}>{topic.mastery}%</p>
-                  </div>
-                  <div style={styles.masteryBar}>
-                    <div
-                      style={{
-                        ...styles.masteryFill,
-                        width: `${topic.mastery}%`,
-                        background: topic.mastery >= 80
-                          ? '#4ade80'
-                          : topic.mastery >= 60
-                          ? '#fbbf24'
-                          : '#f87171',
-                      }}
-                    ></div>
-                  </div>
-                  <p style={styles.topicStats}>
-                    {topic.questionsAsked} Q's | Avg: {topic.avgScore}%
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p style={styles.emptyText}>No topic data yet</p>
-          )}
-        </div>
-
-        {/* Learning Patterns */}
-        <div style={styles.card}>
-          <h2 style={styles.sectionTitle}>🔍 Learning Patterns</h2>
-          <div style={styles.patternsGrid}>
-            <div style={styles.patternCard}>
-              <p style={styles.patternLabel}>Most Active Day</p>
-              <p style={styles.patternValue}>{insights?.mostActiveDay || 'N/A'}</p>
-            </div>
-            <div style={styles.patternCard}>
-              <p style={styles.patternLabel}>Avg Session Length</p>
-              <p style={styles.patternValue}>{analytics.avgSessionLength || 'N/A'}</p>
-            </div>
-            <div style={styles.patternCard}>
-              <p style={styles.patternLabel}>Consistency Score</p>
-              <p style={styles.patternValue}>{analytics.consistencyScore}%</p>
-            </div>
-            <div style={styles.patternCard}>
-              <p style={styles.patternLabel}>Learning Velocity</p>
-              <p style={styles.patternValue}>{insights?.learningVelocity || 'N/A'}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Strengths & Weaknesses */}
-        <div style={styles.twoColumn}>
-          {/* Strengths */}
+        {loading ? (
           <div style={styles.card}>
-            <h2 style={styles.sectionTitle}>⭐ Your Strengths</h2>
-            {analytics.strengths && analytics.strengths.length > 0 ? (
-              <div style={styles.itemsList}>
-                {analytics.strengths.map((strength, idx) => (
-                  <div key={idx} style={styles.strengthItem}>
-                    <p style={styles.itemTitle}>{strength.topic}</p>
-                    <p style={styles.itemScore}>Mastery: {strength.score}%</p>
-                    <p style={styles.itemText}>{strength.feedback}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p style={styles.emptyText}>Keep studying to identify strengths!</p>
-            )}
+            <p style={styles.loadingText}>Loading your progress...</p>
           </div>
-
-          {/* Areas for Improvement */}
+        ) : error ? (
           <div style={styles.card}>
-            <h2 style={styles.sectionTitle}>🎯 Areas to Improve</h2>
-            {analytics.weaknesses && analytics.weaknesses.length > 0 ? (
-              <div style={styles.itemsList}>
-                {analytics.weaknesses.map((weakness, idx) => (
-                  <div key={idx} style={styles.weaknessItem}>
-                    <p style={styles.itemTitle}>{weakness.topic}</p>
-                    <p style={styles.itemScore}>Mastery: {weakness.score}%</p>
-                    <p style={styles.itemText}>{weakness.recommendation}</p>
-                  </div>
-                ))}
+            <p style={styles.errorText}>{error}</p>
+          </div>
+        ) : stats ? (
+          <>
+            {/* Stats Grid */}
+            <div style={styles.statsGrid}>
+              <div style={styles.statCard}>
+                <div style={styles.statIcon}>💬</div>
+                <p style={styles.statNumber}>{stats.questionsAsked || 0}</p>
+                <p style={styles.statLabel}>Questions Asked</p>
               </div>
-            ) : (
-              <p style={styles.emptyText}>Great job! No weak areas detected.</p>
-            )}
-          </div>
-        </div>
+              <div style={styles.statCard}>
+                <div style={styles.statIcon}>📝</div>
+                <p style={styles.statNumber}>{stats.quizzesTaken || 0}</p>
+                <p style={styles.statLabel}>Quizzes Taken</p>
+              </div>
+              <div style={styles.statCard}>
+                <div style={styles.statIcon}>⏱️</div>
+                <p style={styles.statNumber}>{stats.hoursStudied || 0}</p>
+                <p style={styles.statLabel}>Hours Studied</p>
+              </div>
+              <div style={styles.statCard}>
+                <div style={styles.statIcon}>🎯</div>
+                <p style={styles.statNumber}>{stats.averageScore || 0}%</p>
+                <p style={styles.statLabel}>Avg Score</p>
+              </div>
+            </div>
 
-        {/* AI Insights */}
-        <div style={styles.card}>
-          <h2 style={styles.sectionTitle}>💡 AI-Generated Insights</h2>
-          <div style={styles.insightsList}>
-            {insights?.keyInsights && insights.keyInsights.length > 0 ? (
-              insights.keyInsights.map((insight, idx) => (
-                <div key={idx} style={styles.insightItem}>
-                  <p style={styles.insightText}>{insight}</p>
+            {/* Documents Studied */}
+            {stats.documentsStudied && stats.documentsStudied.length > 0 && (
+              <div style={styles.card}>
+                <h2 style={styles.sectionTitle}>📚 Documents Studied</h2>
+                <div style={styles.documentsList}>
+                  {stats.documentsStudied.map((doc, idx) => (
+                    <div key={idx} style={styles.documentItem}>
+                      <p style={styles.docName}>{doc.fileName || doc.name}</p>
+                      <p style={styles.docStats}>
+                        {doc.questionsAsked || 0} questions • {doc.quizzesGenerated || 0} quizzes
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              ))
-            ) : (
-              <p style={styles.emptyText}>More insights coming as you study!</p>
+              </div>
             )}
-          </div>
-        </div>
 
-        {/* Recommendations */}
-        <div style={styles.card}>
-          <h2 style={styles.sectionTitle}>🎓 Personalized Recommendations</h2>
-          <div style={styles.recommendationsList}>
-            {insights?.recommendations && insights.recommendations.length > 0 ? (
-              insights.recommendations.map((rec, idx) => (
-                <div key={idx} style={styles.recommendationItem}>
-                  <span style={styles.recNumber}>{idx + 1}</span>
-                  <div>
-                    <p style={styles.recTitle}>{rec.title}</p>
-                    <p style={styles.recDescription}>{rec.description}</p>
-                  </div>
+            {/* Recent Quizzes */}
+            {stats.recentQuizzes && stats.recentQuizzes.length > 0 && (
+              <div style={styles.card}>
+                <h2 style={styles.sectionTitle}>📝 Recent Quiz Results</h2>
+                <div style={styles.quizzesList}>
+                  {stats.recentQuizzes.map((quiz, idx) => (
+                    <div key={idx} style={styles.quizItem}>
+                      <p style={styles.quizTitle}>{quiz.title || quiz.documentName}</p>
+                      <div style={styles.quizScore}>
+                        <span style={{
+                          ...styles.scoreValue,
+                          color: quiz.score >= 80 ? '#4ade80' : quiz.score >= 60 ? '#fbbf24' : '#f87171'
+                        }}>
+                          {quiz.score}%
+                        </span>
+                        <span style={styles.quizDate}>
+                          {new Date(quiz.date || quiz.takenAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))
-            ) : (
-              <p style={styles.emptyText}>Recommendations will appear as you progress!</p>
+              </div>
             )}
-          </div>
-        </div>
 
-        {/* Progress Summary */}
-        <div style={styles.card}>
-          <h2 style={styles.sectionTitle}>📈 Progress Summary</h2>
-          <p style={styles.summaryText}>{insights?.progressSummary}</p>
-          <div style={styles.actionButtons}>
-            <button
-              onClick={() => onNavigate('quiz')}
-              style={styles.actionBtn}
-            >
-              📝 Take a Quiz
-            </button>
-            <button
-              onClick={() => onNavigate('documents')}
-              style={styles.actionBtn}
-            >
-              💬 Ask Questions
-            </button>
-            <button
-              onClick={() => onNavigate('plan')}
-              style={styles.actionBtn}
-            >
-              🎯 Create Study Plan
-            </button>
-            <button
-              onClick={fetchAnalytics}
-              style={styles.refreshBtn}
-            >
-              🔄 Refresh Analytics
-            </button>
+            {/* Study Streak */}
+            {stats.studyStreak !== undefined && (
+              <div style={styles.card}>
+                <h2 style={styles.sectionTitle}>🔥 Study Streak</h2>
+                <p style={styles.streakValue}>{stats.studyStreak} days</p>
+                <p style={styles.streakText}>Keep it up! You're on a roll! 🎉</p>
+              </div>
+            )}
+          </>
+        ) : (
+          <div style={styles.card}>
+            <p style={styles.emptyText}>No progress data yet. Start studying to see your stats!</p>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -333,278 +188,145 @@ const styles = {
   },
   content: {
     padding: '40px',
-    maxWidth: '1200px',
+    maxWidth: '1000px',
     margin: '0 auto',
-  },
-  header: {
-    textAlign: 'center',
-    marginBottom: '40px',
   },
   pageTitle: {
     margin: '0 0 10px 0',
-    fontSize: '32px',
+    fontSize: '28px',
     fontWeight: 'bold',
     color: '#c9a961',
   },
   pageSubtitle: {
-    margin: 0,
+    margin: '0 0 30px 0',
     fontSize: '14px',
     color: '#9ca3af',
-  },
-  loadingText: {
-    textAlign: 'center',
-    color: '#9ca3af',
-    fontSize: '14px',
-  },
-  metricsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-    gap: '15px',
-    marginBottom: '30px',
-  },
-  metricCard: {
-    background: 'rgba(50, 45, 90, 0.6)',
-    border: '1px solid rgba(201, 169, 97, 0.15)',
-    borderRadius: '12px',
-    padding: '20px',
-    textAlign: 'center',
-  },
-  metricIcon: {
-    fontSize: '28px',
-    margin: '0 0 10px 0',
-  },
-  metricLabel: {
-    margin: '0 0 8px 0',
-    fontSize: '11px',
-    color: '#9ca3af',
-    textTransform: 'uppercase',
-  },
-  metricValue: {
-    margin: 0,
-    fontSize: '24px',
-    fontWeight: 'bold',
-    color: '#c9a961',
   },
   card: {
     background: 'rgba(50, 45, 90, 0.6)',
     border: '1px solid rgba(201, 169, 97, 0.15)',
     borderRadius: '12px',
-    padding: '25px',
+    padding: '30px',
     backdropFilter: 'blur(8px)',
-    marginBottom: '25px',
+    marginBottom: '20px',
+  },
+  statsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: '20px',
+    marginBottom: '30px',
+  },
+  statCard: {
+    background: 'rgba(50, 45, 90, 0.6)',
+    border: '1px solid rgba(201, 169, 97, 0.15)',
+    borderRadius: '12px',
+    padding: '30px',
+    textAlign: 'center',
+    backdropFilter: 'blur(8px)',
+  },
+  statIcon: {
+    fontSize: '32px',
+    marginBottom: '15px',
+  },
+  statNumber: {
+    margin: '0 0 5px 0',
+    fontSize: '28px',
+    fontWeight: 'bold',
+    color: '#c9a961',
+  },
+  statLabel: {
+    margin: 0,
+    fontSize: '12px',
+    color: '#9ca3af',
   },
   sectionTitle: {
     margin: '0 0 20px 0',
     fontSize: '16px',
     fontWeight: '600',
     color: '#c9a961',
-    borderBottom: '1px solid rgba(201, 169, 97, 0.2)',
-    paddingBottom: '10px',
   },
-  overviewText: {
-    margin: 0,
-    fontSize: '13px',
-    color: '#d1d5db',
-    lineHeight: '1.6',
-  },
-  topicsList: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '15px',
-  },
-  topicItem: {
-    padding: '15px',
-    background: 'rgba(30, 25, 60, 0.8)',
-    borderRadius: '8px',
-    border: '1px solid rgba(201, 169, 97, 0.1)',
-  },
-  topicHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    marginBottom: '8px',
-  },
-  topicName: {
-    margin: 0,
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#c9a961',
-  },
-  topicPercent: {
-    margin: 0,
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#d1d5db',
-  },
-  masteryBar: {
-    height: '6px',
-    background: 'rgba(0, 0, 0, 0.2)',
-    borderRadius: '3px',
-    overflow: 'hidden',
-    marginBottom: '8px',
-  },
-  masteryFill: {
-    height: '100%',
-    borderRadius: '3px',
-    transition: 'width 0.3s ease',
-  },
-  topicStats: {
-    margin: 0,
-    fontSize: '10px',
+  loadingText: {
+    textAlign: 'center',
     color: '#9ca3af',
+    fontSize: '13px',
+  },
+  errorText: {
+    textAlign: 'center',
+    color: '#f87171',
+    fontSize: '13px',
   },
   emptyText: {
-    margin: 0,
-    fontSize: '12px',
+    textAlign: 'center',
     color: '#6b7280',
+    fontSize: '13px',
     fontStyle: 'italic',
   },
-  patternsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+  documentsList: {
+    display: 'flex',
+    flexDirection: 'column',
     gap: '12px',
   },
-  patternCard: {
-    background: 'rgba(100, 200, 150, 0.1)',
-    border: '1px solid rgba(100, 200, 150, 0.2)',
-    borderRadius: '8px',
+  documentItem: {
     padding: '15px',
-    textAlign: 'center',
-  },
-  patternLabel: {
-    margin: '0 0 8px 0',
-    fontSize: '11px',
-    color: '#9ca3af',
-  },
-  patternValue: {
-    margin: 0,
-    fontSize: '16px',
-    fontWeight: '600',
-    color: '#4ade80',
-  },
-  twoColumn: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-    gap: '25px',
-    marginBottom: '25px',
-  },
-  itemsList: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
-  },
-  strengthItem: {
-    background: 'rgba(74, 222, 128, 0.1)',
-    border: '1px solid rgba(74, 222, 128, 0.2)',
+    background: 'rgba(201, 169, 97, 0.05)',
+    border: '1px solid rgba(201, 169, 97, 0.1)',
     borderRadius: '8px',
-    padding: '12px',
   },
-  weaknessItem: {
-    background: 'rgba(248, 113, 113, 0.1)',
-    border: '1px solid rgba(248, 113, 113, 0.2)',
-    borderRadius: '8px',
-    padding: '12px',
-  },
-  itemTitle: {
-    margin: '0 0 6px 0',
+  docName: {
+    margin: '0 0 5px 0',
     fontSize: '13px',
     fontWeight: '600',
-    color: '#c9a961',
+    color: '#fff',
   },
-  itemScore: {
-    margin: '0 0 6px 0',
-    fontSize: '12px',
-    color: '#d1d5db',
-  },
-  itemText: {
+  docStats: {
     margin: 0,
     fontSize: '11px',
     color: '#9ca3af',
   },
-  insightsList: {
+  quizzesList: {
     display: 'flex',
     flexDirection: 'column',
     gap: '12px',
   },
-  insightItem: {
-    background: 'rgba(201, 169, 97, 0.1)',
-    border: '1px solid rgba(201, 169, 97, 0.2)',
+  quizItem: {
+    padding: '15px',
+    background: 'rgba(201, 169, 97, 0.05)',
+    border: '1px solid rgba(201, 169, 97, 0.1)',
     borderRadius: '8px',
-    padding: '12px',
-  },
-  insightText: {
-    margin: 0,
-    fontSize: '12px',
-    color: '#d1d5db',
-    lineHeight: '1.5',
-  },
-  recommendationsList: {
     display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
-  },
-  recommendationItem: {
-    display: 'flex',
-    gap: '12px',
-    padding: '12px',
-    background: 'rgba(100, 200, 150, 0.1)',
-    border: '1px solid rgba(100, 200, 150, 0.2)',
-    borderRadius: '8px',
-  },
-  recNumber: {
-    display: 'flex',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    width: '30px',
-    height: '30px',
-    borderRadius: '50%',
-    background: '#4ade80',
-    color: '#0f0f1e',
-    fontWeight: '600',
-    fontSize: '12px',
-    flexShrink: 0,
   },
-  recTitle: {
-    margin: '0 0 4px 0',
-    fontSize: '12px',
-    fontWeight: '600',
-    color: '#4ade80',
-  },
-  recDescription: {
+  quizTitle: {
     margin: 0,
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#fff',
+  },
+  quizScore: {
+    display: 'flex',
+    gap: '15px',
+    alignItems: 'center',
+  },
+  scoreValue: {
+    fontSize: '14px',
+    fontWeight: 'bold',
+  },
+  quizDate: {
     fontSize: '11px',
     color: '#9ca3af',
   },
-  summaryText: {
-    margin: '0 0 20px 0',
-    fontSize: '13px',
-    color: '#d1d5db',
-    lineHeight: '1.6',
-  },
-  actionButtons: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-    gap: '10px',
-  },
-  actionBtn: {
-    padding: '10px 15px',
-    background: 'rgba(201, 169, 97, 0.2)',
-    border: '1px solid rgba(201, 169, 97, 0.3)',
+  streakValue: {
+    margin: '0 0 10px 0',
+    fontSize: '48px',
+    fontWeight: 'bold',
     color: '#c9a961',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontWeight: '600',
-    fontSize: '12px',
   },
-  refreshBtn: {
-    padding: '10px 15px',
-    background: '#c9a961',
-    color: '#0f0f1e',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontWeight: '600',
-    fontSize: '12px',
+  streakText: {
+    margin: 0,
+    fontSize: '14px',
+    color: '#9ca3af',
   },
 };
 
-export default ProgressPageReal;
+export default Progress;

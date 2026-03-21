@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 
+// ✅ ADD THIS LINE AT THE TOP
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const DocumentUploadEnhanced = ({ onNavigate }) => {
   const { token } = useAuth();
@@ -23,7 +25,8 @@ const DocumentUploadEnhanced = ({ onNavigate }) => {
 
   const fetchDocuments = async () => {
     try {
-      const res = await fetch('/api/documents', {
+      // ✅ UPDATED: Use API_URL
+      const res = await fetch(`${API_URL}/api/documents`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -72,7 +75,8 @@ const DocumentUploadEnhanced = ({ onNavigate }) => {
         });
       }, 200);
 
-      const res = await fetch('/api/documents/upload', {
+      // ✅ UPDATED: Use API_URL
+      const res = await fetch(`${API_URL}/api/documents/upload`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -111,7 +115,8 @@ const DocumentUploadEnhanced = ({ onNavigate }) => {
     setStreamingAnswer('');
 
     try {
-      const res = await fetch('/api/questions/ask', {
+      // ✅ UPDATED: Use API_URL
+      const res = await fetch(`${API_URL}/api/questions/ask`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -161,7 +166,8 @@ const DocumentUploadEnhanced = ({ onNavigate }) => {
     if (!window.confirm('Delete this document?')) return;
 
     try {
-      const res = await fetch(`/api/documents/${documentId}`, {
+      // ✅ UPDATED: Use API_URL
+      const res = await fetch(`${API_URL}/api/documents/${documentId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

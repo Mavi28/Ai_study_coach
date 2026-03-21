@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 
+// ✅ ADD THIS LINE AT THE TOP
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const QuizGeneratorReal = ({ onNavigate }) => {
   const { token } = useAuth();
   const [documents, setDocuments] = useState([]);
@@ -19,7 +22,8 @@ const QuizGeneratorReal = ({ onNavigate }) => {
 
   const fetchDocuments = async () => {
     try {
-      const res = await fetch('/api/documents', {
+      // ✅ UPDATED: Use API_URL
+      const res = await fetch(`${API_URL}/api/documents`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -42,8 +46,9 @@ const QuizGeneratorReal = ({ onNavigate }) => {
     setGeneratingQuiz(true);
 
     try {
+      // ✅ UPDATED: Use API_URL
       // Get document
-      const docRes = await fetch(`/api/documents/${selectedDoc}`, {
+      const docRes = await fetch(`${API_URL}/api/documents/${selectedDoc}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const docData = await docRes.json();
@@ -55,8 +60,9 @@ const QuizGeneratorReal = ({ onNavigate }) => {
 
       console.log('🤖 Generating quiz with Groq...');
 
+      // ✅ UPDATED: Use API_URL
       // Call backend to generate quiz with Groq
-      const quizRes = await fetch('/api/questions/generate-quiz', {
+      const quizRes = await fetch(`${API_URL}/api/questions/generate-quiz`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
