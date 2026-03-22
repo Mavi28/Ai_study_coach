@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 
-// ✅ ADD THIS LINE AT THE TOP
+// ✅ ADD THIS LINE
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const StudyPlan = ({ onNavigate }) => {
@@ -44,7 +44,7 @@ const StudyPlan = ({ onNavigate }) => {
     setGeneratingPlan(true);
 
     try {
-      // ✅ UPDATED: Use API_URL
+      // ✅ UPDATED: Use API_URL and correct payload
       const res = await fetch(`${API_URL}/api/study-plan/generate`, {
         method: 'POST',
         headers: {
@@ -52,9 +52,14 @@ const StudyPlan = ({ onNavigate }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          documentId: selectedDoc,
-          learningStyle: learningStyle,
-          timeframe: timeframe,
+          userAnswers: {
+            learningStyle: learningStyle,
+            studyGoal: 'Master the material comprehensively',
+            timeAvailable: timeframe === '1week' ? '4 hours/day' : timeframe === '2weeks' ? '2 hours/day' : '1 hour/day',
+            pacePreference: timeframe === '1week' ? 'Intensive' : timeframe === '2weeks' ? 'Moderate' : 'Relaxed',
+            strengths: 'Eager and motivated to learn',
+          },
+          selectedDocuments: [selectedDoc],
         }),
       });
 
@@ -64,7 +69,7 @@ const StudyPlan = ({ onNavigate }) => {
         throw new Error(data.error || 'Failed to generate study plan');
       }
 
-      setStudyPlan(data);
+      setStudyPlan(data.plan);
     } catch (err) {
       console.error('Error generating plan:', err);
       alert('Error: ' + err.message);
@@ -200,7 +205,7 @@ const StudyPlan = ({ onNavigate }) => {
           // Study Plan Display
           <div style={styles.card}>
             <div style={styles.planHeader}>
-              <h2 style={styles.planTitle}>{studyPlan.title || 'Your Study Plan'}</h2>
+              <h2 style={styles.planTitle}>{studyPlan.overview || 'Your Study Plan'}</h2>
               <button
                 onClick={() => setStudyPlan(null)}
                 style={styles.editBtn}
@@ -210,52 +215,72 @@ const StudyPlan = ({ onNavigate }) => {
             </div>
 
             <div style={styles.planInfo}>
-              <p><strong>Duration:</strong> {studyPlan.duration}</p>
               <p><strong>Learning Style:</strong> {learningStyle}</p>
-              <p><strong>Total Hours:</strong> {studyPlan.totalHours || 'N/A'}</p>
+              <p><strong>Timeframe:</strong> {timeframe}</p>
+              <p><strong>Study Method:</strong> {studyPlan.recommendedMethod || 'Personalized approach'}</p>
             </div>
 
             {/* Weekly Schedule */}
-            {studyPlan.weeklySchedule && (
+            {studyPlan.weeklySchedule && studyPlan.weeklySchedule.length > 0 && (
               <div style={styles.scheduleSection}>
                 <h3 style={styles.subtitle}>📅 Weekly Schedule</h3>
-                {studyPlan.weeklySchedule.map((week, idx) => (
-                  <div key={idx} style={styles.weekCard}>
-                    <h4 style={styles.weekTitle}>Week {idx + 1}</h4>
-                    <p style={styles.weekGoal}>{week.goal || week.focus}</p>
-                    {week.tasks && (
-                      <ul style={styles.tasksList}>
-                        {week.tasks.map((task, taskIdx) => (
-                          <li key={taskIdx} style={styles.taskItem}>
-                            {task}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                {studyPlan.weeklySchedule.map((day, idx) => (
+                  <div key={idx} style={styles.scheduleItem}>
+                    <h4 style={styles.dayTitle}>{day.day}</h4>
+                    <p><strong>Focus:</strong> {day.focus}</p>
+                    <p><strong>Duration:</strong> {day.duration}</p>
+                    <p><strong>Technique:</strong> {day.technique}</p>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Study Tips */}
-            {studyPlan.tips && (
-              <div style={styles.tipsSection}>
-                <h3 style={styles.subtitle}>💡 Study Tips</h3>
-                <ul style={styles.tipsList}>
-                  {studyPlan.tips.map((tip, idx) => (
-                    <li key={idx} style={styles.tipItem}>{tip}</li>
-                  ))}
-                </ul>
+            {/* Daily Routine */}
+            {studyPlan.dailyRoutine && studyPlan.dailyRoutine.length > 0 && (
+              <div style={styles.routineSection}>
+                <h3 style={styles.subtitle}>⏰ Daily Routine</h3>
+                {studyPlan.dailyRoutine.map((item, idx) => (
+                  <div key={idx} style={styles.routineItem}>
+                    <p><strong>{item.time}</strong> - {item.activity}</p>
+                    <p style={styles.routineTip}>💡 {item.tip}</p>
+                  </div>
+                ))}
               </div>
             )}
 
-            {/* Resources */}
-            {studyPlan.resources && (
-              <div style={styles.resourcesSection}>
-                <h3 style={styles.subtitle}>📚 Recommended Resources</h3>
-                <ul style={styles.resourcesList}>
-                  {studyPlan.resources.map((resource, idx) => (
-                    <li key={idx} style={styles.resourceItem}>{resource}</li>
+            {/* Study Techniques */}
+            {studyPlan.studyTechniques && studyPlan.studyTechniques.length > 0 && (
+              <div style={styles.techniquesSection}>
+                <h3 style={styles.subtitle}>🎯 Study Techniques</h3>
+                {studyPlan.studyTechniques.map((technique, idx) => (
+                  <div key={idx} style={styles.techniqueItem}>
+                    <h4>{technique.name}</h4>
+                    <p>{technique.description}</p>
+                    <p style={styles.whenToUse}><strong>When to use:</strong> {technique.whenToUse}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Milestones */}
+            {studyPlan.milestones && studyPlan.milestones.length > 0 && (
+              <div style={styles.milestonesSection}>
+                <h3 style={styles.subtitle}>🏆 Milestones</h3>
+                {studyPlan.milestones.map((milestone, idx) => (
+                  <div key={idx} style={styles.milestoneItem}>
+                    <p><strong>{milestone.week}:</strong> {milestone.goal}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Tips for Success */}
+            {studyPlan.tipsForSuccess && studyPlan.tipsForSuccess.length > 0 && (
+              <div style={styles.tipsSection}>
+                <h3 style={styles.subtitle}>✨ Tips for Success</h3>
+                <ul style={styles.tipsList}>
+                  {studyPlan.tipsForSuccess.map((tip, idx) => (
+                    <li key={idx} style={styles.tipItem}>{tip}</li>
                   ))}
                 </ul>
               </div>
@@ -277,18 +302,19 @@ const StudyPlan = ({ onNavigate }) => {
 const styles = {
   container: {
     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 50%, #0f0f1e 100%)',
+    background: 'linear-gradient(180deg, #2a1810 0%, #3d2817 50%, #1a1810 100%)',
     color: '#fff',
     fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
   },
   navbar: {
-    background: 'rgba(20, 15, 40, 0.8)',
-    backdropFilter: 'blur(10px)',
+    background: 'rgba(30, 20, 10, 0.95)',
+    backdropFilter: 'blur(15px)',
     padding: '20px 40px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottom: '1px solid rgba(201, 169, 97, 0.2)',
+    borderBottom: '3px solid #e8b923',
+    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
   },
   navLeft: {
     display: 'flex',
@@ -455,32 +481,63 @@ const styles = {
   scheduleSection: {
     marginBottom: '30px',
   },
-  weekCard: {
+  scheduleItem: {
     background: 'rgba(30, 25, 60, 0.8)',
     border: '1px solid rgba(201, 169, 97, 0.1)',
     borderRadius: '8px',
     padding: '15px',
     marginBottom: '15px',
   },
-  weekTitle: {
+  dayTitle: {
     margin: '0 0 8px 0',
     fontSize: '13px',
     fontWeight: '600',
     color: '#c9a961',
   },
-  weekGoal: {
-    margin: '0 0 10px 0',
+  routineSection: {
+    marginBottom: '30px',
+  },
+  routineItem: {
+    background: 'rgba(30, 25, 60, 0.8)',
+    border: '1px solid rgba(201, 169, 97, 0.1)',
+    borderRadius: '8px',
+    padding: '12px',
+    marginBottom: '10px',
     fontSize: '12px',
     color: '#d1d5db',
   },
-  tasksList: {
-    margin: 0,
-    paddingLeft: '20px',
-    fontSize: '12px',
-    color: '#9ca3af',
+  routineTip: {
+    margin: '6px 0 0 0',
+    fontSize: '11px',
+    color: '#c9a961',
   },
-  taskItem: {
-    marginBottom: '5px',
+  techniquesSection: {
+    marginBottom: '30px',
+  },
+  techniqueItem: {
+    background: 'rgba(30, 25, 60, 0.8)',
+    border: '1px solid rgba(201, 169, 97, 0.1)',
+    borderRadius: '8px',
+    padding: '15px',
+    marginBottom: '12px',
+  },
+  whenToUse: {
+    margin: '8px 0 0 0',
+    fontSize: '11px',
+    color: '#9ca3af',
+    fontStyle: 'italic',
+  },
+  milestonesSection: {
+    marginBottom: '30px',
+  },
+  milestoneItem: {
+    background: 'rgba(30, 25, 60, 0.8)',
+    border: '1px solid rgba(201, 169, 97, 0.1)',
+    borderRadius: '8px',
+    padding: '12px',
+    marginBottom: '10px',
+    fontSize: '12px',
+    color: '#d1d5db',
   },
   tipsSection: {
     marginBottom: '30px',
@@ -494,20 +551,8 @@ const styles = {
   tipItem: {
     marginBottom: '8px',
   },
-  resourcesSection: {
-    marginBottom: '30px',
-  },
-  resourcesList: {
-    margin: 0,
-    paddingLeft: '20px',
-    fontSize: '12px',
-    color: '#9ca3af',
-  },
-  resourceItem: {
-    marginBottom: '8px',
-  },
   backBtnStyle: {
-    padding: '10px 20px',
+    padding: '12px 20px',
     background: 'rgba(201, 169, 97, 0.2)',
     border: '1px solid rgba(201, 169, 97, 0.4)',
     color: '#c9a961',

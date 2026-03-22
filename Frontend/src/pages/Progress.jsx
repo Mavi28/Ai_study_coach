@@ -17,7 +17,7 @@ const Progress = ({ onNavigate }) => {
   const fetchProgressStats = async () => {
     try {
       // ✅ UPDATED: Use API_URL
-      const res = await fetch(`${API_URL}/api/progress`, {
+      const res = await fetch(`${API_URL}/api/progress/analytics`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
